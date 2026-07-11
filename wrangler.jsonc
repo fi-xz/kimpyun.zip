@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kpj-web",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-07-12",
+  "observability": {
+    "enabled": true
+  }
+}
