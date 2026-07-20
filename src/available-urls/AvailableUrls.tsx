@@ -62,6 +62,13 @@ const urls: UrlItem[] = [
     href: "https://kimpyun.zip/chzzk.m3u8",
   },
   {
+    icon: chzzk,
+    iconType: "square",
+    label: "치지직 (라디오 .m3u8)",
+    shortUrl: "/chzzk-radio.m3u8",
+    href: "https://kimpyun.zip/chzzk-radio.m3u8",
+  },
+  {
     icon: naverCafeIcon,
     iconType: "square",
     label: "편찻집 (네이버 팬카페)",
