@@ -1,0 +1,10 @@
+# 줄바꿈을 LF 로 고정합니다.
+# 이게 없으면 Windows 체크아웃이 CRLF 가 되어 Prettier(기본값 LF)가
+# 모든 파일을 "포맷 안 됨"으로 보고, CI(리눅스)와 로컬 결과가 어긋납니다.
+* text=auto eol=lf
+
+*.png   binary
+*.webp  binary
+*.jpg   binary
+*.mp4   binary
+*.woff2 binary
