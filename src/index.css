@@ -1,20 +1,128 @@
+/* SUITE Variable — 자체 호스팅 (SIL Open Font License 1.1, public/fonts/SUITE-LICENSE.txt)
+   서드파티 CDN(jsDelivr gh/) 은 프로덕션 폰트 배포용이 아니고, 남의 CSS 라
+   font-display 를 제어할 수 없어 FOIT 가 발생했습니다. */
+@font-face {
+  font-family: "SUITE Variable";
+  src: url("/fonts/SUITE-Variable.woff2") format("woff2-variations");
+  font-weight: 300 900; /* 원본 CSS 와 동일 — 이 범위 밖 weight 는 합성됩니다 */
+  font-style: normal;
+  font-display: swap; /* 폰트 로드 전에도 폴백으로 텍스트가 보이게 */
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+:root {
+  /* 스크롤바·폼 컨트롤 등 브라우저가 그리는 UI 까지 함께 적응시킵니다 */
+  color-scheme: light dark;
+
+  /* 표면 */
+  --surface: #edecea;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f7f6f4; /* 표 헤더 */
+
+  /* 콘텐츠 3단계 */
+  --content-primary: #1a1a1a; /* 14.74:1 on surface */
+  --content-secondary: #4e4e4e; /*  7.05:1 on surface */
+  --content-tertiary: #6b6b6b; /*  4.51:1 on surface — 하한선 */
+
+  /* 구분선 (비텍스트, 대비 기준 미적용) */
+  --separator: #d0d0d0;
+  --separator-weak: #e8e6e2;
+
+  /* 액센트 — 채널 아이콘 선화의 그라디언트 중간값(H291)에서 도출했습니다.
+     네 채널 아이콘은 배경색만 다르고 선화는 같은 로즈→퍼플→인디고 그라디언트입니다.
+     그 중간값이라 한쪽 끝이 아니라 선 전체를 대표합니다. (12번 문서 참조)
+
+     의미는 "상호작용 가능" 하나뿐입니다 — 포커스 링·hover·활성 상태에만 쓰고
+     장식이나 성공/오류 표시에 쓰지 마십시오.
+     `color.md`: "Avoid using the same color to mean different things." */
+  --accent: #af28c7; /* 4.50:1 on surface / 5.32:1 on raised / 4.92:1 on sunken */
+  /* hover 배경 — 행 배경(raised)에 액센트를 6% 섞은 값.
+     본문 15.89:1, 그 위에 올라가는 액센트 글자도 4.85:1 로 기준을 넘깁니다.
+     더 진하게 섞으면 액센트 글자가 4.5:1 아래로 떨어집니다. */
+  --accent-weak: #faf2fc;
+
+  /* 폴백을 --content-primary 로 둡니다. 고정값(#2a2a2a)은 다크 배경에서
+     1.20:1 로 사실상 보이지 않습니다. */
+  --focus-ring: var(--accent, var(--content-primary));
+
+  /* 유동 타이포 스케일 — 하한 @≤1440px, 상한 @2560px
+     계수: b = (상한 - 하한) / 11.2,  a = 하한 - b × 14.4  (rem = 16px 기준) */
+
+  /* 42 → 64px : 홈 .name, 404 .code */
+  --fs-display: clamp(2.625rem, 0.8571rem + 1.9643vw, 4rem);
+
+  /* 32 → 44px : available-urls .title */
+  --fs-title: clamp(2rem, 1.0357rem + 1.0714vw, 2.75rem);
+
+  /* 15 → 20px : 본문 (홈 .linksRow, 404 .message) */
+  --fs-body: clamp(0.9375rem, 0.5357rem + 0.4464vw, 1.25rem);
+
+  /* 14 → 18px : 본문 보조 (표 .platform) */
+  --fs-label: clamp(0.875rem, 0.5536rem + 0.3571vw, 1.125rem);
+
+  /* 13 → 16px : 부가 링크·데이터 (.subLink, .subtitle, .url, .home) */
+  --fs-small: clamp(0.8125rem, 0.5714rem + 0.2679vw, 1rem);
+
+  /* 12 → 15px : 캡션 (footer, 표 헤더) — 기존 11.5/11px 을 12px 하한으로 상향 */
+  --fs-caption: clamp(0.75rem, 0.5089rem + 0.2679vw, 0.9375rem);
+
+  /* 레이아웃 폭 — 520px @≤1440 → 768px @2560 (표, footer 읽기 폭)
+     divider 는 이 토큰을 쓰지 않습니다: 링크 행 폭은 뷰포트가 아니라 폰트 크기로
+     결정되므로 vw 기반 토큰이 따라갈 수 없습니다. App.module.css 의 .head 참조 */
+  --measure: min(92vw, clamp(32.5rem, 12.5714rem + 22.1429vw, 48rem));
+}
+
+/* 다크 모드 — 시스템 설정만 따릅니다.
+   `dark-mode.md › Best practices`: "Avoid offering an app-specific appearance setting."
+   앱 자체 테마 토글을 만들지 마십시오. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 표면 — 순검정이 아니라 라이트의 크림(#edecea)과 같은 색상각을 유지한 웜 다크 */
+    --surface: #1c1b1a;
+    --surface-raised: #262524;
+    --surface-sunken: #211f1e;
+
+    /* 콘텐츠 — 순백이 아닙니다.
+       `dark-mode.md › Text`: 순백 텍스트는 다크 배경에서 번져 보입니다(할레이션) */
+    --content-primary: #f2f1ef; /* 15.24:1 on surface */
+    --content-secondary: #b3b1ad; /*  8.03:1 on surface / 7.15:1 on raised */
+    --content-tertiary: #98958f; /*  5.76:1 on surface / 5.50:1 on sunken */
+
+    --separator: #3a3937;
+    --separator-weak: #302f2d;
+
+    /* 같은 색상각(H291). 다크 배면에서는 밝기를 올려야 대비가 납니다 */
+    --accent: #c679d4; /* 5.80:1 on surface / 5.16:1 on raised */
+    /* raised 에 액센트 8%. 본문 12.03:1, 액센트 글자 4.58:1 */
+    --accent-weak: #332c32;
+  }
+}
+
 body {
   margin: 0;
-  background: #edecea;
+  background: var(--surface);
   font-family: "SUITE Variable", system-ui, sans-serif;
 }
 
 a {
-  color: #333;
+  color: var(--content-primary);
   text-decoration: none;
 }
 
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* hover 는 지금까지 색이 그대로여서 사실상 피드백이 없었습니다.
+   액센트의 첫 번째 용도입니다. */
 a:hover {
-  color: #000;
+  color: var(--accent);
 }
