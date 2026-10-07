@@ -1,56 +1,65 @@
-import React from "react";
+import type React from "react";
 import styles from "./App.module.css";
+import SiteFooter from "./components/SiteFooter";
+import type { ShortUrl } from "./data/shortlinks";
 
-import kpj from "./assets/KPJ.png";
-import chzzk from "./assets/CHZZK.png";
-import kpjFull from "./assets/KPJFull.jpg";
-import kpjRage from "./assets/KPJRage.jpg";
-import kpjEdit from "./assets/KPJEdit.jpg";
-import xIcon from "./assets/X.svg";
-import urlIcon from "./assets/URL.svg";
+import kpj from "./assets/KPJ-256.webp";
+import chzzk from "./assets/CHZZK-96.webp";
+import kpjFull from "./assets/KPJFull-96.webp";
+import kpjRage from "./assets/KPJRage-96.webp";
+import kpjEdit from "./assets/KPJEdit-96.webp";
+import XIcon from "./assets/X.svg?react";
+import UrlIcon from "./assets/URL.svg?react";
+
+type IconComponent = React.FC<React.SVGProps<SVGSVGElement>>;
 
 interface Link {
-  icon: string;
+  /** 사진·로고는 URL, 단색 아이콘은 SVG 컴포넌트 */
+  icon: string | IconComponent;
   label: string;
-  href: string;
-  iconClass: string;
+  /**
+   * 외부 주소가 아니라 자기 단축 URL 로 보냅니다. 채널 주소가 바뀌면
+   * shortlinks.ts 한 곳만 고치면 되고, 없는 경로를 쓰면 타입 검사가 잡습니다.
+   */
+  href: ShortUrl;
+  iconClass: "iconRound" | "iconSquare" | "iconSvg";
 }
 
 const links: Link[] = [
   {
     icon: kpj,
     label: "유튜브 본 채널",
-    href: "https://www.youtube.com/channel/UCqIsRcbdqG2AyR4dZWaLAGg",
+    href: "https://kimpyun.zip/youtube",
     iconClass: "iconRound",
   },
   {
     icon: chzzk,
     label: "치지직",
-    href: "https://chzzk.naver.com/live/0f171fd568c130cf09f2d3a641c4cbf1",
+    href: "https://kimpyun.zip/chzzk",
     iconClass: "iconSquare",
   },
   {
     icon: kpjFull,
     label: "풀영상 채널",
-    href: "https://www.youtube.com/channel/UC84_f3MneocxMfDs8sm18CA",
+    href: "https://kimpyun.zip/full",
     iconClass: "iconRound",
   },
   {
     icon: kpjRage,
     label: "빡겜 김편집 채널",
-    href: "https://www.youtube.com/channel/UCSq0uzRoCGJkYzXNA5IRA8A",
+    href: "https://kimpyun.zip/rage",
     iconClass: "iconRound",
   },
   {
     icon: kpjEdit,
     label: "김편집편집 채널",
-    href: "https://www.youtube.com/channel/UCyRlJv071Hb0ezcb7aZ4XeQ",
+    href: "https://kimpyun.zip/edit",
     iconClass: "iconRound",
   },
   {
-    icon: xIcon,
+    icon: XIcon,
     label: "X (구 Twitter)",
-    href: "https://twitter.com/__ARPA",
+    href: "https://kimpyun.zip/x",
     iconClass: "iconSvg",
   },
 ];
@@ -58,48 +67,53 @@ const links: Link[] = [
 export default function App() {
   return (
     <div className={styles.container}>
-      <img src={kpj} className={styles.profile} alt="김편집" />
+      <img
+        src={kpj}
+        width={256}
+        height={256}
+        decoding="async"
+        className={styles.profile}
+        alt=""
+      />
       <h1 className={styles.name}>김편집</h1>
-      <div className={styles.divider} />
+      <div className={styles.head}>
+        <div className={styles.divider} />
 
-      <div className={styles.linksRow}>
-        {links.map((link, i) => (
-          <React.Fragment key={link.label}>
-            <a href={link.href} className={styles.link}>
-              <img src={link.icon} className={styles[link.iconClass]} alt="" />
-              <span>{link.label}</span>
+        <div className={styles.linksRow}>
+          {links.map(({ icon: Icon, label, href, iconClass }) => (
+            <a key={label} href={href} className={styles.link}>
+              {typeof Icon === "string" ? (
+                <img
+                  src={Icon}
+                  width={96}
+                  height={96}
+                  decoding="async"
+                  className={styles[iconClass]}
+                  alt=""
+                />
+              ) : (
+                <Icon
+                  className={styles[iconClass]}
+                  aria-hidden="true"
+                  focusable="false"
+                />
+              )}
+              <span>{label}</span>
             </a>
-            {i < links.length - 1 && <span className={styles.sep}>|</span>}
-          </React.Fragment>
-        ))}
+          ))}
+        </div>
       </div>
 
       <a href="/available-urls/" className={styles.subLink}>
-        <img src={urlIcon} className={styles.iconSvg} alt="" />
+        <UrlIcon
+          className={styles.iconSvg}
+          aria-hidden="true"
+          focusable="false"
+        />
         <span>사용 가능한 URL 목록</span>
       </a>
 
-      <footer className={styles.footer}>
-        <p>
-          이 웹사이트는 인터넷 방송인 "김편집"이 소유하고 있지 않으며,
-          비공식적인 도메인입니다.
-        </p>
-        <p>
-          방송인 본인이 원하지 않는 경우 웹사이트는 언제든지 사라질 수 있음을
-          미리 고지합니다.
-        </p>
-        <p>
-          웹사이트를 사용하면서 발생하는 모든 문제에 대해 인터넷 방송인
-          "김편집"은 책임 질 수 없습니다.
-        </p>
-        <p>"치지직"은 주식회사 네이버의 등록된 상표입니다.</p>
-        <p>
-          웹사이트와 관련된 문의는{" "}
-          <a href="mailto:admin@kimpyun.zip">admin@kimpyun.zip</a> 를
-          이용해주십시오.
-        </p>
-        <p>일반적으로, 민원 처리 이후 회신을 드리고 있지 않습니다.</p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
