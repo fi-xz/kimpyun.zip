@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # packageManager 필드(pnpm@12.4.2)를 그대로 따릅니다.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          # scripts/*.mjs 가 .ts 를 직접 import 합니다.
+          # 타입 스트리핑이 기본 활성인 버전이어야 합니다(22.18+).
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: 포맷 검사
+        run: pnpm format:check
+
+      - name: 린트 (jsx-a11y 포함)
+        run: pnpm lint
+
+      - name: 타입 검사 (사이트 + Worker)
+        run: pnpm typecheck
+
+      # build 가 check:font 와 check:routes 를 먼저 돌립니다.
+      # 서브셋 폰트 누락과 wrangler.toml 드리프트가 여기서 잡힙니다.
+      - name: 빌드
+        run: pnpm build
