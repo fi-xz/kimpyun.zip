@@ -2,25 +2,39 @@
   "name": "kpj-web",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "pnpm run check:font && pnpm run check:routes && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc",
-    "deploy": "pnpm run build && wrangler pages deploy ./dist --project-name=kpj-web --force"
+    "typecheck": "tsc && tsc -p worker",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "check:font": "node scripts/check-font-coverage.mjs",
+    "check:routes": "node scripts/wrangler-url-generator.mjs --check",
+    "font:subset": "node scripts/build-font-subset.mjs",
+    "worker:routes": "node scripts/wrangler-url-generator.mjs",
+    "deploy:pages": "pnpm run build && wrangler pages deploy ./dist --project-name=kpj-web --force",
+    "deploy:worker": "pnpm run check:routes && wrangler deploy --config worker/wrangler.toml",
+    "deploy": "pnpm run deploy:pages && pnpm run deploy:worker"
   },
   "dependencies": {
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.44.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.83.0",
+    "prettier": "^3.9.6",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
-    "wrangler": "^4.110.0"
+    "vite-plugin-svgr": "^5.2.0",
+    "wrangler": "^4.132.0"
   }
 }
