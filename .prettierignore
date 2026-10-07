@@ -1,0 +1,8 @@
+dist/
+pnpm-lock.yaml
+
+# 생성물 — 손으로 고치지 않습니다
+worker/wrangler.toml
+
+# 글자 목록 원본. 줄바꿈이 들어가면 서브셋 결과가 바뀝니다
+public/fonts/charset.txt
