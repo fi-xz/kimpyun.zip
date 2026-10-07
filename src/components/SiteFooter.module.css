@@ -1,0 +1,28 @@
+/* 두 페이지가 공유하는 면책 고지.
+   페이지마다 다른 것은 위쪽 간격뿐이므로 --footer-gap 으로 부모가 지정합니다
+   (홈 80px / URL 목록 60px). 커스텀 속성은 DOM 을 타고 상속되므로
+   CSS 모듈 경계를 넘어 전달됩니다. */
+.footer {
+  margin-top: var(--footer-gap, 80px);
+  max-width: var(--measure);
+  text-align: center;
+  font-size: var(--fs-caption);
+  line-height: 1.8;
+  color: var(--content-secondary);
+}
+
+.footer p {
+  margin: 0 0 8px;
+}
+
+.footer p:last-child {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--content-secondary);
+}
+
+.footer a:hover {
+  color: var(--accent);
+}
