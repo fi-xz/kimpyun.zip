@@ -84,11 +84,13 @@ export const shortLinks = [
     target: "https://www.youtube.com/channel/UCSq0uzRoCGJkYzXNA5IRA8A",
   },
   {
-    path: "/edit",
+    path: "/basement1",
     section: "channel",
-    label: "김편집편집 채널",
+    label: "김편집 지하1층 채널",
     listed: true,
     target: "https://www.youtube.com/channel/UCyRlJv071Hb0ezcb7aZ4XeQ",
+    // Backwards compatibility
+    aliases: ["/edit", "/b1"],
   },
   {
     path: "/chzzk",

@@ -23,7 +23,15 @@ pattern = "kimpyun.zip/rage"
 zone_name = "kimpyun.zip"
 
 [[routes]]
+pattern = "kimpyun.zip/basement1"
+zone_name = "kimpyun.zip"
+
+[[routes]]
 pattern = "kimpyun.zip/edit"
+zone_name = "kimpyun.zip"
+
+[[routes]]
+pattern = "kimpyun.zip/b1"
 zone_name = "kimpyun.zip"
 
 [[routes]]

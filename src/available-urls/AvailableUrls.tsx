@@ -7,7 +7,7 @@ import kpj from "../assets/KPJ-96.webp";
 import chzzk from "../assets/CHZZK-96.webp";
 import kpjFull from "../assets/KPJFull-96.webp";
 import kpjRage from "../assets/KPJRage-96.webp";
-import kpjEdit from "../assets/KPJEdit-96.webp";
+import kpjBasement1 from "../assets/KPJBasement1-96.webp";
 import XIcon from "@/assets/X.svg?react";
 import discordIcon from "../assets/Discord.svg";
 import naverCafeIcon from "../assets/NaverCafe-96.webp";
@@ -31,7 +31,7 @@ const icons: Record<ListedPath, IconSpec> = {
   "/youtube": { icon: kpj, iconType: "round" },
   "/full": { icon: kpjFull, iconType: "round" },
   "/rage": { icon: kpjRage, iconType: "round" },
-  "/edit": { icon: kpjEdit, iconType: "round" },
+  "/basement1": { icon: kpjBasement1, iconType: "round" },
   "/chzzk": { icon: chzzk, iconType: "square" },
   "/chzzk/chat": { icon: chzzk, iconType: "square" },
   "/chzzk.m3u8": { icon: chzzk, iconType: "square" },

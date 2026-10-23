@@ -7,7 +7,7 @@ import kpj from "./assets/KPJ-256.webp";
 import chzzk from "./assets/CHZZK-96.webp";
 import kpjFull from "./assets/KPJFull-96.webp";
 import kpjRage from "./assets/KPJRage-96.webp";
-import kpjEdit from "./assets/KPJEdit-96.webp";
+import kpjBasement1 from "./assets/KPJBasement1-96.webp";
 import XIcon from "./assets/X.svg?react";
 import UrlIcon from "./assets/URL.svg?react";
 
@@ -51,9 +51,9 @@ const links: Link[] = [
     iconClass: "iconRound",
   },
   {
-    icon: kpjEdit,
-    label: "김편집편집 채널",
-    href: "https://kimpyun.zip/edit",
+    icon: kpjBasement1,
+    label: "김편집 지하1층 채널",
+    href: "https://kimpyun.zip/basement1",
     iconClass: "iconRound",
   },
   {
