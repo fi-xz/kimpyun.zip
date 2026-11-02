@@ -1,0 +1,78 @@
+{
+  "component": {
+    "type": 17,
+    "accent_color": 4438271,
+    "components": [
+      {
+        "type": 9,
+        "components": [
+          {
+            "type": 10,
+            "content": "## [김편집](https://kimpyun.zip/)\n리듬게임 요소가 있으면 뭐든지 퍼먹는 스트리머 김편집입니다. 리듬게임 대회 캐스터 및 해설을 하고있습니다."
+          }
+        ],
+        "accessory": {
+          "type": 11,
+          "media": {
+            "url": "https://kimpyun.zip/og.png"
+          },
+          "description": "김편집 프로필 사진"
+        }
+      },
+      {
+        "type": 14,
+        "spacing": 1
+      },
+      {
+        "type": 1,
+        "components": [
+          {
+            "type": 2,
+            "style": 5,
+            "label": "유튜브 본 채널",
+            "url": "https://kimpyun.zip/youtube"
+          },
+          {
+            "type": 2,
+            "style": 5,
+            "label": "치지직",
+            "url": "https://kimpyun.zip/chzzk"
+          },
+          {
+            "type": 2,
+            "style": 5,
+            "label": "X",
+            "url": "https://kimpyun.zip/x"
+          }
+        ]
+      },
+      {
+        "type": 1,
+        "components": [
+          {
+            "type": 2,
+            "style": 5,
+            "label": "풀영상 채널",
+            "url": "https://kimpyun.zip/full"
+          },
+          {
+            "type": 2,
+            "style": 5,
+            "label": "빡겜 김편집 채널",
+            "url": "https://kimpyun.zip/rage"
+          },
+          {
+            "type": 2,
+            "style": 5,
+            "label": "김편집 지하1층 채널",
+            "url": "https://kimpyun.zip/basement1"
+          }
+        ]
+      },
+      {
+        "type": 10,
+        "content": "-# [사용 가능한 URL 목록](https://kimpyun.zip/available-urls/) · admin@kimpyun.zip"
+      }
+    ]
+  }
+}

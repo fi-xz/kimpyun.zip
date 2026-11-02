@@ -119,6 +119,8 @@ function renderHead(page: PageMeta): string {
     `<link rel="apple-touch-icon" href="/apple-touch-icon.png" />`,
     `<link rel="manifest" href="/manifest.webmanifest" />`,
     "",
+    `<link rel="discord:component-embed" type="application/json" href="%VITE_SITE_ORIGIN%/embed.json">`,
+    "",
     `<link rel="preload" href="/fonts/SUITE-Variable.woff2" as="font" type="font/woff2" crossorigin />`,
   ].join("\n    ");
 }
@@ -265,6 +267,7 @@ function devNotFound(): Plugin {
 export default defineConfig({
   appType: "mpa",
   root: PAGES_DIR,
+  envDir: r("./"),
   publicDir: r("./public"),
   resolve: { alias: { "@": r("./src") } },
   plugins: [react(), svgr(), pageMeta(), generatedSiteFiles(), devNotFound()],
