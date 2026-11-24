@@ -72,6 +72,8 @@ export default function App() {
         width={256}
         height={256}
         decoding="async"
+        // 첫 화면에서 가장 큰 요소(LCP)입니다. 다른 이미지보다 먼저 받습니다.
+        fetchPriority="high"
         className={styles.profile}
         alt=""
       />

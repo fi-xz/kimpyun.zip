@@ -1,10 +1,5 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+import { mount } from "@/mount";
 import NotFound from "@/not-found/NotFound";
 import "@/index.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <NotFound />
-  </React.StrictMode>,
-);
+mount(<NotFound />);

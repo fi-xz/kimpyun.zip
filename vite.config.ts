@@ -1,13 +1,21 @@
 import {
+  build,
   defineConfig,
   type IndexHtmlTransformContext,
   type Plugin,
+  type ResolvedConfig,
 } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
-import { fileURLToPath } from "node:url";
-import { existsSync } from "node:fs";
-import { relative, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { join, relative, sep } from "node:path";
 import {
   CANONICAL_ORIGIN,
   pathsOf,
@@ -43,6 +51,12 @@ interface PageMeta {
   /** 사이트 내 정식 경로. null 이면 색인 대상이 아닙니다(404) */
   path: string | null;
   ogType?: "profile" | "website";
+  /**
+   * 미리 그린 HTML 위에 React 를 붙일지(hydrate) 여부. 기본값 true.
+   * false 면 빌드 결과에서 JS 를 빼고 HTML + CSS 만 남깁니다.
+   * 상호작용(상태·이벤트)이 없는 페이지에만 쓰십시오. dev 서버는 이 값과 무관하게 JS 로 렌더합니다.
+   */
+  hydrate?: boolean;
 }
 
 /**
@@ -61,6 +75,8 @@ const PAGES = {
       "리듬게임 요소가 있으면 뭐든지 퍼먹는 스트리머 김편집입니다. 리듬게임 대회 캐스터 및 해설을 하고있습니다.",
     path: "/",
     ogType: "profile",
+    // 링크와 이미지뿐이라 JS 가 필요 없습니다. React 번들(gzip 약 69KB)을 받지 않습니다.
+    hydrate: false,
   },
   availableUrls: {
     file: "available-urls/index.html",
@@ -343,23 +359,140 @@ function devNotFound(): Plugin {
   };
 }
 
-export default defineConfig({
+const SSR_ENTRY = r("./src/entry-server.tsx");
+/** 미리 그리기용 SSR 번들 임시 위치. 끝나면 지웁니다 */
+const SSR_OUT = r("./node_modules/.prerender");
+const ROOT_EMPTY = `<div id="root"></div>`;
+
+/** 빌드 결과에서 JS 를 걷어냅니다(hydrate: false 페이지) */
+const stripScripts = (html: string) =>
+  html
+    .replace(/[ \t]*<script type="module"[^>]*><\/script>\n?/g, "")
+    .replace(/[ \t]*<link rel="modulepreload"[^>]*>\n?/g, "");
+
+/**
+ * 클라이언트 빌드가 끝나면 각 페이지의 #root 를 미리 그린 HTML 로 채웁니다.
+ *
+ * 그대로 두면 첫 화면이 React 를 받아 실행한 뒤에야 나타납니다. 모바일
+ * (느린 네트워크·CPU)에서 LCP 가 그만큼 늦어지고, 한국 → 해외 PoP 처럼
+ * 왕복 지연이 큰 경로에서는 HTML → JS → 이미지 순서의 대기가 쌓입니다.
+ *
+ * 같은 설정으로 SSR 빌드를 한 번 더 돌리므로 CSS Modules 클래스명과
+ * 에셋 해시가 클라이언트 빌드와 같습니다. 어긋나면 아래 검사가 build 를 실패시킵니다.
+ */
+function prerender(): Plugin {
+  let config: ResolvedConfig;
+
+  return {
+    name: "prerender",
+    apply: (_, env) => env.command === "build" && !env.isSsrBuild,
+    configResolved(c) {
+      config = c;
+    },
+    async closeBundle() {
+      const outDir = config.build.outDir;
+
+      await build({
+        configFile: r("./vite.config.ts"),
+        mode: config.mode,
+        logLevel: "warn",
+        build: { ssr: SSR_ENTRY, outDir: SSR_OUT, emptyOutDir: true },
+      });
+
+      try {
+        const bundle = readdirSync(SSR_OUT).find((f) => /\.m?js$/.test(f));
+        if (!bundle) throw new Error("SSR 번들을 찾지 못했습니다");
+        const server = (await import(
+          pathToFileURL(join(SSR_OUT, bundle)).href
+        )) as {
+          pageFiles: string[];
+          renderPage: (file: string) => string;
+        };
+
+        const assets = readdirSync(join(outDir, "assets"));
+        const css = assets
+          .filter((f) => f.endsWith(".css"))
+          .map((f) => readFileSync(join(outDir, "assets", f), "utf8"))
+          .join("\n");
+
+        for (const page of Object.values(PAGES) as PageMeta[]) {
+          if (!server.pageFiles.includes(page.file)) {
+            throw new Error(`src/entry-server.tsx 에 ${page.file} 가 없습니다`);
+          }
+
+          const file = join(outDir, page.file);
+          const html = readFileSync(file, "utf8");
+          if (html.split(ROOT_EMPTY).length !== 2) {
+            throw new Error(
+              `${page.file} 에 ${ROOT_EMPTY} 가 정확히 하나여야 합니다`,
+            );
+          }
+
+          const body = server.renderPage(page.file);
+          let out = html.replace(
+            ROOT_EMPTY,
+            () => `<div id="root">${body}</div>`,
+          );
+          if (page.hydrate === false) out = stripScripts(out);
+
+          // SSR 과 클라이언트 빌드가 어긋나면 화면이 깨진 채 배포됩니다. 여기서 막습니다.
+          const missingAssets = [...body.matchAll(/\/assets\/[^"'\s)]+/g)]
+            .map((m) => m[0].slice("/assets/".length))
+            .filter((name) => !assets.includes(name));
+          const missingClasses = [...body.matchAll(/class="([^"]+)"/g)]
+            .flatMap((m) => m[1].split(/\s+/))
+            .filter((name) => !css.includes(`.${name}`));
+          if (missingAssets.length || missingClasses.length) {
+            throw new Error(
+              `${page.file}: 미리 그린 HTML 이 클라이언트 빌드와 어긋납니다\n` +
+                `  없는 에셋: ${missingAssets.join(", ") || "-"}\n` +
+                `  없는 클래스: ${missingClasses.join(", ") || "-"}`,
+            );
+          }
+
+          writeFileSync(file, out);
+        }
+        config.logger.info(
+          `✓ 미리 그리기 — ${Object.values(PAGES)
+            .map((p) => p.file)
+            .join(", ")}`,
+        );
+      } finally {
+        rmSync(SSR_OUT, { recursive: true, force: true });
+      }
+    },
+  };
+}
+
+export default defineConfig(({ isSsrBuild }) => ({
   appType: "mpa",
   root: PAGES_DIR,
   envDir: r("./"),
   publicDir: r("./public"),
   resolve: { alias: { "@": r("./src") } },
-  plugins: [react(), svgr(), pageMeta(), generatedSiteFiles(), devNotFound()],
-  build: {
-    outDir: r("./dist"),
-    emptyOutDir: true,
-    rollupOptions: {
-      input: Object.fromEntries(
-        Object.entries(PAGES).map(([name, p]) => [
-          name,
-          r(`./pages/${p.file}`),
-        ]),
-      ),
-    },
-  },
-});
+  plugins: isSsrBuild
+    ? // 미리 그리기용 SSR 빌드. HTML·사이트 파일 생성은 클라이언트 빌드가 맡습니다.
+      [react(), svgr()]
+    : [
+        react(),
+        svgr(),
+        pageMeta(),
+        generatedSiteFiles(),
+        devNotFound(),
+        prerender(),
+      ],
+  build: isSsrBuild
+    ? {}
+    : {
+        outDir: r("./dist"),
+        emptyOutDir: true,
+        rollupOptions: {
+          input: Object.fromEntries(
+            Object.entries(PAGES).map(([name, p]) => [
+              name,
+              r(`./pages/${p.file}`),
+            ]),
+          ),
+        },
+      },
+}));
