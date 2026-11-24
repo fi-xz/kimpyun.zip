@@ -1,10 +1,11 @@
 /**
  * 단축 URL 단일 출처.
  *
- * 여기 한 곳만 고치면 세 곳이 함께 갱신됩니다.
+ * 여기 한 곳만 고치면 네 곳이 함께 갱신됩니다.
  *   1. worker/wrangler.toml [[routes]]  — scripts/wrangler-url-generator.mjs 가 생성
  *   2. worker/src/index.ts  라우팅      — 이 배열에서 조회 맵을 만듦
  *   3. 목록 페이지                      — listed: true 인 항목만 표시
+ *   4. robots.txt Disallow              — handler 가 있는 경로(vite.config.ts 가 생성)
  *
  * 이미지·CSS 를 import 하지 마십시오. 이 파일은 Worker 번들에도 들어갑니다.
  * 아이콘은 각 페이지에서 path 로 매핑합니다.
@@ -165,6 +166,12 @@ export const shortLinks = [
  * 넓혀야 link.handler 같은 접근과 좁히기가 가능합니다.
  */
 export const routableLinks: readonly ShortLink[] = shortLinks;
+
+/** 링크 하나가 차지하는 모든 경로(정식 경로 + 별칭) */
+export const pathsOf = (link: ShortLink): readonly string[] => [
+  link.path,
+  ...(link.aliases ?? []),
+];
 
 /** 배열에 실제로 존재하는 경로만 허용하는 타입. 오타를 컴파일 단계에서 잡습니다 */
 export type ShortPath = (typeof shortLinks)[number]["path"];

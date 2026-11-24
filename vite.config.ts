@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import { fileURLToPath } from "node:url";
 import { relative, sep } from "node:path";
+import { pathsOf, routableLinks } from "./src/data/shortlinks.ts";
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const PAGES_DIR = r("./pages");
@@ -28,6 +29,8 @@ interface PageMeta {
   /** Vite root(= pages/) 기준 경로 */
   file: string;
   title: string;
+  /** twitter:title 만 따로 줄 때. 없으면 title 을 씁니다 */
+  twitterTitle?: string;
   description: string;
   /** 사이트 내 정식 경로. null 이면 색인 대상이 아닙니다(404) */
   path: string | null;
@@ -42,6 +45,10 @@ const PAGES = {
   main: {
     file: "index.html",
     title: "김편집",
+    // X 는 짧은 제목(3글자 이하)을 카드에 표시하지 않습니다(직접 실험으로 확인했습니다).
+    // 그래서 twitter:title 만 길게 줍니다. <title> 과 og:title 은 "김편집" 그대로입니다.
+    // Google 은 제목 링크를 만들 때 twitter:title 을 보지 않으므로 검색 결과에는 영향이 없습니다.
+    twitterTitle: "메인 페이지 - 김편집",
     description:
       "리듬게임 요소가 있으면 뭐든지 퍼먹는 스트리머 김편집입니다. 리듬게임 대회 캐스터 및 해설을 하고있습니다.",
     path: "/",
@@ -71,6 +78,33 @@ const PAGES = {
 const ROUTES: string[] = Object.values(PAGES)
   .map((p): string | null => p.path)
   .filter((p): p is string => p !== null);
+
+/** "/available-urls/" 와 "/available-urls" 를 같은 경로로 봅니다(Pages 가 슬래시를 정규화) */
+const normalizePath = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
+
+/**
+ * 페이지 경로와 단축 URL 경로가 겹치면 build 를 실패시킵니다.
+ * 겹치면 Worker 라우트가 페이지를 가로채, sitemap 에 실린 주소가
+ * 페이지 대신 리다이렉트를 돌려주게 됩니다.
+ */
+function assertNoRouteOverlap(): void {
+  const pages = new Map(ROUTES.map((p) => [normalizePath(p), p]));
+  const clashes = routableLinks.flatMap((link) =>
+    pathsOf(link)
+      .filter((p) => pages.has(normalizePath(p)))
+      .map(
+        (p) =>
+          `${p} (단축 URL ${link.path}) ↔ 페이지 ${pages.get(normalizePath(p))}`,
+      ),
+  );
+  if (clashes.length) {
+    throw new Error(
+      `PAGES 경로와 shortlinks 경로가 겹칩니다:\n  - ${clashes.join("\n  - ")}`,
+    );
+  }
+}
+
+assertNoRouteOverlap();
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
@@ -107,7 +141,7 @@ function renderHead(page: PageMeta): string {
     // 정사각 프로필이므로 summary_large_image 가 아니라 summary 입니다.
     // 후자를 쓰려면 1200x630 가로형 이미지를 따로 만들어야 합니다.
     meta("name", "twitter:card", "summary"),
-    meta("name", "twitter:title", page.title),
+    meta("name", "twitter:title", page.twitterTitle ?? page.title),
     meta("name", "twitter:description", page.description),
     meta("name", "twitter:image", OG_IMAGE.url),
     meta("name", "twitter:image:alt", OG_IMAGE.alt),
@@ -155,6 +189,27 @@ const SITEMAP = [
   "",
 ].join("\n");
 
+/**
+ * 실행 로직(handler)이 있는 단축 URL 은 크롤러가 부를 때마다 치지직 API 를 호출하고,
+ * 방송 중이 아니면 JSON 오류를 돌려줍니다. 색인할 가치가 없으므로 막습니다.
+ *
+ * 정적 리다이렉트는 막지 않습니다. 막으면 크롤러가 목적지를 따라가지 못해
+ * 링크 미리보기·favicon 수집이 깨질 수 있습니다.
+ *
+ * Cloudflare AI Crawl Control(Managed robots.txt)을 끈 상태를 전제로 합니다.
+ * 켜져 있으면 Cloudflare 가 이 내용 앞에 자체 규칙을 덧붙입니다.
+ */
+const ROBOTS = [
+  "User-agent: *",
+  ...routableLinks
+    .filter((link) => link.handler)
+    .flatMap(pathsOf)
+    .map((p) => `Disallow: ${p}`),
+  "",
+  `Sitemap: ${SITE}/sitemap.xml`,
+  "",
+].join("\n");
+
 /** HTML 의 <!--head--> 자리에 공통 메타를 채웁니다 */
 function pageMeta(): Plugin {
   const pageFor = (ctx: IndexHtmlTransformContext): PageMeta => {
@@ -183,10 +238,11 @@ function pageMeta(): Plugin {
   };
 }
 
-/** sitemap.xml · manifest.webmanifest 를 PAGES 에서 생성합니다 */
+/** sitemap.xml · manifest.webmanifest · robots.txt 를 PAGES · shortlinks 에서 생성합니다 */
 function generatedSiteFiles(): Plugin {
   const FILES: Record<string, { body: string; type: string }> = {
     "/sitemap.xml": { body: SITEMAP, type: "application/xml" },
+    "/robots.txt": { body: ROBOTS, type: "text/plain; charset=utf-8" },
     "/manifest.webmanifest": {
       body: MANIFEST,
       type: "application/manifest+json",

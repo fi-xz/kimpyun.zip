@@ -31,11 +31,17 @@ export function redirect(
   });
 }
 
+/**
+ * 오류 응답(.m3u8 의 방송 종료 등)이 검색 결과에 실리지 않도록 noindex 를 붙입니다.
+ */
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: withCommonHeaders(
-      new Headers({ "Content-Type": "application/json" }),
+      new Headers({
+        "Content-Type": "application/json",
+        "X-Robots-Tag": "noindex",
+      }),
     ),
   });
 }
