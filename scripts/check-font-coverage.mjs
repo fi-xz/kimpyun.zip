@@ -4,7 +4,8 @@
  * 서브셋을 다시 만들지 않고 문구만 추가하면 그 글자가 폴백 폰트로 렌더되어
  * 글자만 섞여 보입니다. 원인을 찾기 어려운 버그라 자동으로 막습니다.
  *
- * 의존성 없음 (순수 Node) — CI 에서 바로 돌릴 수 있습니다.
+ * 글자 수집은 build-font-subset.mjs 의 collectChars() 를 그대로 씁니다(주석 제외).
+ * 주석을 찾는 파서는 이미 devDependency 인 vite 의 것이라 추가 설치가 없습니다.
  */
 import { readFileSync } from "node:fs";
 import { collectChars } from "./build-font-subset.mjs";

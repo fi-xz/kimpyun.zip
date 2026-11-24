@@ -14,11 +14,14 @@
  *
  * 소스의 문구를 고친 뒤에는 반드시 다시 실행하십시오.
  * 빠뜨리면 `pnpm check:font` 가 잡아냅니다.
+ *
+ * 주석은 글자를 모을 때 뺍니다. 화면에 나오지 않는 글자로 폰트가 커지지 않게 합니다.
  */
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
+import { parseSync } from "vite";
 
 const SRC_DIRS = ["src", "pages"];
 const EXTS = new Set([".tsx", ".ts", ".html", ".css"]);
@@ -55,9 +58,35 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * 주석을 지운 소스. 화면에 나올 수 있는 글자(문자열·JSX 텍스트·CSS content 등)만 남깁니다.
+ *
+ * .ts/.tsx 는 정규식이 아니라 파서(Vite 가 내보내는 oxc)로 주석 위치를 찾습니다.
+ * 정규식으로는 "https://" 같은 문자열이나 JSX 텍스트 속 "//" 를 주석으로 오인해,
+ * 실제로 보이는 글자를 빠뜨릴 수 있습니다. 빠뜨리는 쪽이 더 위험합니다(폴백 폰트로 렌더).
+ * 그래서 파싱에 실패하면 주석을 지우지 않고 원문 그대로 셉니다.
+ */
+function stripComments(file, text) {
+  const ext = extname(file);
+  if (ext === ".css") return text.replace(/\/\*[\s\S]*?\*\//g, "");
+  if (ext === ".html") return text.replace(/<!--[\s\S]*?-->/g, "");
+
+  const { comments, errors } = parseSync(file, text);
+  if (errors.length) {
+    console.warn(`  ! ${file}: 파싱 실패 — 주석을 포함해 셉니다`);
+    return text;
+  }
+  // 뒤에서부터 지워야 앞쪽 위치가 밀리지 않습니다.
+  let out = text;
+  for (const c of [...comments].sort((a, b) => b.start - a.start)) {
+    out = out.slice(0, c.start) + out.slice(c.end);
+  }
+  return out;
+}
+
 export function collectChars() {
   const text = SRC_DIRS.flatMap((d) => walk(d))
-    .map((f) => readFileSync(f, "utf8"))
+    .map((f) => stripComments(f, readFileSync(f, "utf8")))
     .join("");
   return [...new Set(text)]
     .filter((c) => c.codePointAt(0) >= 0x20)
