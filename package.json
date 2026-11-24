@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.4.2",
+  "packageManager": "pnpm@12.23.0",
   "scripts": {
     "dev": "vite",
     "build": "pnpm run check:font && pnpm run check:routes && vite build",
@@ -28,15 +28,15 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "oxlint": "^1.89.0",
-    "prettier": "^3.9.10",
+    "@vitejs/plugin-react": "^6.3.0",
+    "oxlint": "^1.94.0",
+    "prettier": "^3.10.1",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5",
+    "vite": "^8.3.8",
     "vite-plugin-svgr": "^5.2.0",
-    "wrangler": "^4.151.3"
+    "wrangler": "^4.166.0"
   }
 }

@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # packageManager 필드(pnpm@12.4.2)를 그대로 따릅니다.
+      # packageManager 필드(pnpm@12.23.0)를 그대로 따릅니다.
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v7
