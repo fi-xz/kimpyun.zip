@@ -486,6 +486,10 @@ export default defineConfig(({ isSsrBuild }) => ({
     : {
         outDir: r("./dist"),
         emptyOutDir: true,
+        // 배포물은 minify 한 채로 두고, 개발자 도구에서만 원본 소스로 보이게 합니다.
+        // .map 은 개발자 도구를 열 때만 받아지므로 방문자에게는 비용이 없습니다.
+        // 공개 저장소라 원본이 드러나도 잃을 것이 없습니다.
+        sourcemap: true,
         rollupOptions: {
           input: Object.fromEntries(
             Object.entries(PAGES).map(([name, p]) => [
