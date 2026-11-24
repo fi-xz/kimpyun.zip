@@ -3,6 +3,7 @@
  *
  * 여기 한 곳만 고치면 네 곳이 함께 갱신됩니다.
  *   1. worker/wrangler.toml [[routes]]  — scripts/wrangler-url-generator.mjs 가 생성
+ *                                         (프로덕션 + staging 라우트)
  *   2. worker/src/index.ts  라우팅      — 이 배열에서 조회 맵을 만듦
  *   3. 목록 페이지                      — listed: true 인 항목만 표시
  *   4. robots.txt Disallow              — handler 가 있는 경로(vite.config.ts 가 생성)
@@ -13,11 +14,32 @@
 
 const CHANNEL_ID = "0f171fd568c130cf09f2d3a641c4cbf1";
 
-/** 목록 페이지가 광고하는 정식 도메인 */
-export const SITE = "https://kimpyun.zip";
+/**
+ * 프로덕션 정식 origin. ShortUrl 타입과 메인 페이지 링크에만 씁니다.
+ *
+ * 환경(staging 등)에 따라 바뀌는 origin 은 여기 두지 않습니다. 이 파일은
+ * Worker 번들에도 들어가므로 import.meta.env 를 읽을 수 없습니다.
+ * 페이지에서 환경 origin 이 필요하면 src/site-origin.ts 를 쓰십시오.
+ */
+export const CANONICAL_ORIGIN = "https://kimpyun.zip";
 
 /** worker/src/index.ts 의 handlers 와 키가 일치해야 합니다(타입으로 강제됨) */
 export type HandlerName = "chzzkM3u8" | "chzzkRadioM3u8";
+
+/**
+ * HTML 리디렉션 모드(staging 실험)에서 쓰는 경로별 아이콘.
+ * public/link-icons/<이름>.png 가 실제 파일이며 scripts/build-link-icons.mjs 가 만듭니다.
+ * 파일이 없으면 build 가 실패합니다(vite.config.ts).
+ */
+export type LinkIconName =
+  | "kpj"
+  | "kpj-full"
+  | "kpj-rage"
+  | "kpj-basement1"
+  | "chzzk"
+  | "naver-cafe"
+  | "x"
+  | "discord";
 
 /**
  * 목록 페이지의 묶음.
@@ -47,12 +69,18 @@ interface ShortLinkBase {
 interface StaticLink extends ShortLinkBase {
   target: string;
   handler?: never;
+  /**
+   * HTML 리디렉션 모드에서 쓸 아이콘. 없으면 그 모드에서도 302 를 유지합니다.
+   * (/ss, /rr 은 원본 아이콘이 없어 일부러 비워 둡니다)
+   */
+  linkIcon?: LinkIconName;
 }
 
-/** .m3u8 처럼 실행 로직이 필요한 경로 */
+/** .m3u8 처럼 실행 로직이 필요한 경로. 리디렉션 모드와 무관하게 항상 302 입니다 */
 interface DynamicLink extends ShortLinkBase {
   handler: HandlerName;
   target?: never;
+  linkIcon?: never;
 }
 
 /** target 과 handler 는 반드시 하나만 가집니다(둘 다 쓰면 타입 오류) */
@@ -68,6 +96,7 @@ export const shortLinks = [
     label: "유튜브 본 채널",
     listed: true,
     target: "https://www.youtube.com/channel/UCqIsRcbdqG2AyR4dZWaLAGg",
+    linkIcon: "kpj",
     aliases: ["/yt"],
   },
   {
@@ -76,6 +105,7 @@ export const shortLinks = [
     label: "풀영상 채널",
     listed: true,
     target: "https://www.youtube.com/channel/UC84_f3MneocxMfDs8sm18CA",
+    linkIcon: "kpj-full",
   },
   {
     path: "/rage",
@@ -83,6 +113,7 @@ export const shortLinks = [
     label: "빡겜 김편집 채널",
     listed: true,
     target: "https://www.youtube.com/channel/UCSq0uzRoCGJkYzXNA5IRA8A",
+    linkIcon: "kpj-rage",
   },
   {
     path: "/basement1",
@@ -90,6 +121,7 @@ export const shortLinks = [
     label: "김편집 지하1층 채널",
     listed: true,
     target: "https://www.youtube.com/channel/UCyRlJv071Hb0ezcb7aZ4XeQ",
+    linkIcon: "kpj-basement1",
     // Backwards compatibility
     aliases: ["/edit", "/b1"],
   },
@@ -99,6 +131,7 @@ export const shortLinks = [
     label: "치지직",
     listed: true,
     target: `https://chzzk.naver.com/live/${CHANNEL_ID}`,
+    linkIcon: "chzzk",
   },
   {
     path: "/chzzk/chat",
@@ -106,6 +139,7 @@ export const shortLinks = [
     label: "치지직 (채팅)",
     listed: true,
     target: `https://chzzk.naver.com/live/${CHANNEL_ID}/chat`,
+    linkIcon: "chzzk",
   },
   {
     path: "/chzzk.m3u8",
@@ -127,6 +161,7 @@ export const shortLinks = [
     label: "편찻집 (네이버 팬카페)",
     listed: true,
     target: "https://cafe.naver.com/kpjchzzk",
+    linkIcon: "naver-cafe",
   },
   {
     path: "/x",
@@ -134,6 +169,7 @@ export const shortLinks = [
     label: "X (구 Twitter)",
     listed: true,
     target: "https://x.com/__ARPA",
+    linkIcon: "x",
     aliases: ["/twitter"],
   },
   {
@@ -142,6 +178,7 @@ export const shortLinks = [
     label: "디스코드 (편디코)",
     listed: true,
     target: "https://discord.com/invite/BRrtWgEJ6C",
+    linkIcon: "discord",
   },
   {
     path: "/ss",
@@ -177,7 +214,7 @@ export const pathsOf = (link: ShortLink): readonly string[] => [
 export type ShortPath = (typeof shortLinks)[number]["path"];
 
 /** "https://kimpyun.zip/youtube" 처럼 도메인까지 붙인 정식 단축 URL */
-export type ShortUrl = `${typeof SITE}${ShortPath}`;
+export type ShortUrl = `${typeof CANONICAL_ORIGIN}${ShortPath}`;
 
 /** 목록 페이지에 노출되는 경로 */
 export type ListedPath = Extract<

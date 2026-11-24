@@ -32,6 +32,10 @@ jobs:
       - name: 타입 검사 (사이트 + Worker)
         run: pnpm typecheck
 
+      # 프로덕션 Worker 가 계속 302 를 내는지, staging 만 HTML 리디렉션인지 확인합니다.
+      - name: Worker 테스트
+        run: pnpm test
+
       # build 가 check:font 와 check:routes 를 먼저 돌립니다.
       # 서브셋 폰트 누락과 wrangler.toml 드리프트가 여기서 잡힙니다.
       - name: 빌드

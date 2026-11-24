@@ -1,3 +1,14 @@
+/**
+ * wrangler.toml [vars] 로 들어오는 환경 변수. scripts/wrangler-url-generator.mjs 가 씁니다.
+ * 둘 다 선택값이며, 없으면 프로덕션 동작(302, 헤더 추가 없음)입니다.
+ */
+export interface Env {
+  /** "html" 이면 아이콘이 있는 정적 링크를 HTML 리디렉션으로 응답합니다 */
+  REDIRECT_MODE?: string;
+  /** "true" 면 모든 응답에 X-Robots-Tag: noindex 를 붙입니다(staging) */
+  ROBOTS_NOINDEX?: string;
+}
+
 export interface BaseResponse {
   code: number;
   message: string;

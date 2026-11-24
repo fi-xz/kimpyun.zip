@@ -1,10 +1,11 @@
 import {
+  pathsOf,
   routableLinks,
   type HandlerName,
   type ShortLink,
-} from "../../src/data/shortlinks";
-import { json, redirect } from "./helper";
-import type { BaseResponse, LivePlayback } from "./type";
+} from "../../src/data/shortlinks.ts";
+import { htmlRedirect, json, redirect } from "./helper.ts";
+import type { BaseResponse, Env, LivePlayback } from "./type.ts";
 
 const CHANNEL_ID = "0f171fd568c130cf09f2d3a641c4cbf1";
 
@@ -107,22 +108,52 @@ const handlers: Record<HandlerName, () => Promise<Response>> = {
 /** path(별칭 포함) → 링크. 모듈 로드 시 한 번만 만듭니다 */
 const routes = new Map<string, ShortLink>();
 for (const link of routableLinks) {
-  for (const path of [link.path, ...(link.aliases ?? [])]) {
+  for (const path of pathsOf(link)) {
     routes.set(path, link);
   }
+}
+
+/**
+ * 정적 링크 하나를 응답으로 바꿉니다.
+ *
+ * REDIRECT_MODE 가 정확히 "html" 이고 아이콘이 지정된 링크만 HTML 리디렉션이 됩니다.
+ * 그 외(값 없음, "302", 오타)는 전부 기존 302 입니다 — 프로덕션이 실수로
+ * 바뀌지 않도록 기본값을 302 쪽에 둡니다.
+ */
+function staticResponse(link: ShortLink & { target: string }, env: Env) {
+  if (env.REDIRECT_MODE === "html" && link.linkIcon) {
+    return htmlRedirect(
+      link.target,
+      `${link.label} - 김편집`,
+      `/link-icons/${link.linkIcon}.png`,
+    );
+  }
+  return redirect(link.target);
+}
+
+async function route(request: Request, env: Env): Promise<Response> {
+  const link = routes.get(new URL(request.url).pathname);
+
+  // 등록되지 않은 경로는 origin(Pages) 으로 흘려보냅니다.
+  // wrangler.toml [[routes]] 가 정확하면 여기 오는 일은 거의 없습니다.
+  if (!link) return fetch(request);
+
+  // handler(.m3u8)는 리디렉션 모드와 무관하게 항상 기존 동작(302)입니다.
+  if (link.handler) return handlers[link.handler]();
+  return staticResponse(link, env);
 }
 
 // Main handler
 
 export default {
-  async fetch(request: Request): Promise<Response> {
-    const link = routes.get(new URL(request.url).pathname);
+  async fetch(request: Request, env: Env = {}): Promise<Response> {
+    const res = await route(request, env);
+    if (env.ROBOTS_NOINDEX !== "true") return res;
 
-    // 등록되지 않은 경로는 origin(Pages) 으로 흘려보냅니다.
-    // wrangler.toml [[routes]] 가 정확하면 여기 오는 일은 거의 없습니다.
-    if (!link) return fetch(request);
-
-    if (link.handler) return handlers[link.handler]();
-    return redirect(link.target);
+    // staging: 이 Worker 가 내보내는 모든 응답을 색인에서 뺍니다.
+    // fetch() 로 받은 응답은 헤더가 불변이라 복사해서 고칩니다.
+    const out = new Response(res.body, res);
+    out.headers.set("X-Robots-Tag", "noindex");
+    return out;
   },
 };

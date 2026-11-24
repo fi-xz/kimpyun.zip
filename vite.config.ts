@@ -6,14 +6,22 @@ import {
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { relative, sep } from "node:path";
-import { pathsOf, routableLinks } from "./src/data/shortlinks.ts";
+import {
+  CANONICAL_ORIGIN,
+  pathsOf,
+  routableLinks,
+} from "./src/data/shortlinks.ts";
 
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const PAGES_DIR = r("./pages");
 
-/** 정식 도메인. src/data/shortlinks.ts 의 SITE 와 같은 값입니다 */
-const SITE = "https://kimpyun.zip";
+/**
+ * 정식 도메인. canonical · og:url · sitemap 은 staging 빌드에서도 프로덕션을 가리킵니다.
+ * staging 은 X-Robots-Tag: noindex 로 색인을 막으므로(public/_headers) 이 편이 안전합니다.
+ */
+const SITE = CANONICAL_ORIGIN;
 
 /** 06번 다크 모드의 --surface 토큰과 일치해야 합니다 (src/index.css) */
 const THEME = { light: "#edecea", dark: "#1c1b1a" } as const;
@@ -104,7 +112,21 @@ function assertNoRouteOverlap(): void {
   }
 }
 
+/** HTML 리디렉션 모드가 가리킬 아이콘 파일이 실제로 있는지 확인합니다 */
+function assertLinkIcons(): void {
+  const missing = [
+    ...new Set(routableLinks.flatMap((l) => (l.linkIcon ? [l.linkIcon] : []))),
+  ].filter((name) => !existsSync(r(`./public/link-icons/${name}.png`)));
+  if (missing.length) {
+    throw new Error(
+      `public/link-icons/ 에 없는 아이콘입니다: ${missing.join(", ")}\n` +
+        "  해결: pnpm run icons:links",
+    );
+  }
+}
+
 assertNoRouteOverlap();
+assertLinkIcons();
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
@@ -195,6 +217,7 @@ const SITEMAP = [
  *
  * 정적 리다이렉트는 막지 않습니다. 막으면 크롤러가 목적지를 따라가지 못해
  * 링크 미리보기·favicon 수집이 깨질 수 있습니다.
+ * 같은 이유로 staging 도 `Disallow: /` 대신 X-Robots-Tag 로 색인만 막습니다.
  *
  * Cloudflare AI Crawl Control(Managed robots.txt)을 끈 상태를 전제로 합니다.
  * 켜져 있으면 Cloudflare 가 이 내용 앞에 자체 규칙을 덧붙입니다.

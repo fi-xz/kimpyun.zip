@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FC, type SVGProps } from "react";
 import styles from "./AvailableUrls.module.css";
 import SiteFooter from "../components/SiteFooter";
-import { SITE, listedBySection, type ListedPath } from "../data/shortlinks";
+import { listedBySection, type ListedPath } from "../data/shortlinks";
+import { SITE_ORIGIN } from "../site-origin";
 
 import kpj from "../assets/KPJ-96.webp";
 import chzzk from "../assets/CHZZK-96.webp";
@@ -141,7 +142,7 @@ export default function AvailableUrls() {
           </div>
 
           {listedBySection.channel.map(({ path, label }) => (
-            <a key={path} href={`${SITE}${path}`} className={styles.row}>
+            <a key={path} href={`${SITE_ORIGIN}${path}`} className={styles.row}>
               <Platform path={path} label={label} />
               <span className={styles.url}>{path}</span>
             </a>
@@ -169,7 +170,7 @@ export default function AvailableUrls() {
             <div key={path} className={`${styles.row} ${styles.streamGrid}`}>
               <Platform path={path} label={label} />
               <span className={styles.url}>{path}</span>
-              <CopyButton url={`${SITE}${path}`} path={path} />
+              <CopyButton url={`${SITE_ORIGIN}${path}`} path={path} />
             </div>
           ))}
         </div>

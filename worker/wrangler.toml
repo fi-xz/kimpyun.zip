@@ -6,6 +6,9 @@ name = "kimpyunzip"
 main = "src/index.ts"
 compatibility_date = "2026-07-12"
 
+[vars]
+REDIRECT_MODE = "302"
+
 [[routes]]
 pattern = "kimpyun.zip/youtube"
 zone_name = "kimpyun.zip"
@@ -72,4 +75,82 @@ zone_name = "kimpyun.zip"
 
 [[routes]]
 pattern = "kimpyun.zip/rr"
+zone_name = "kimpyun.zip"
+
+# ── staging (wrangler … --env staging) ──
+# 프로덕션 라우트와 같은 경로를 staging.kimpyun.zip 에 붙입니다.
+
+[env.staging]
+name = "kimpyunzip-staging"
+
+[env.staging.vars]
+REDIRECT_MODE = "html"
+ROBOTS_NOINDEX = "true"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/youtube"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/yt"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/full"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/rage"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/basement1"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/edit"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/b1"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/chzzk"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/chzzk/chat"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/chzzk.m3u8"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/chzzk-radio.m3u8"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/cafe"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/x"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/twitter"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/discord"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/ss"
+zone_name = "kimpyun.zip"
+
+[[env.staging.routes]]
+pattern = "staging.kimpyun.zip/rr"
 zone_name = "kimpyun.zip"

@@ -1,5 +1,7 @@
 /**
- * src/data/shortlinks.ts → worker/wrangler.toml [[routes]] 생성.
+ * src/data/shortlinks.ts → worker/wrangler.toml 생성.
+ * 프로덕션 [[routes]] 와 [env.staging] 의 [[env.staging.routes]] 를 함께 만들고,
+ * --check 는 파일 전체를 비교하므로 두 환경을 모두 검사합니다.
  *
  *   node scripts/wrangler-url-generator.mjs            생성(덮어쓰기)
  *   node scripts/wrangler-url-generator.mjs --check    최신 상태인지 검사만 (CI·빌드용)
@@ -18,6 +20,26 @@ const WORKER_MAIN = "src/index.ts";
 const ZONE_NAME = "kimpyun.zip";
 
 /**
+ * staging Worker. 같은 존(kimpyun.zip) 안의 서브도메인에 같은 경로로 붙습니다.
+ *   kimpyun.zip/*         → kimpyunzip          (+ Pages production)
+ *   staging.kimpyun.zip/* → kimpyunzip-staging  (+ Pages staging 브랜치)
+ */
+const STAGING = {
+  env: "staging",
+  name: `${WORKER_NAME}-staging`,
+  host: `staging.${ZONE_NAME}`,
+};
+
+/**
+ * Worker 환경 변수(worker/src/type.ts 의 Env).
+ * wrangler 는 vars 를 env 로 상속하지 않으므로 양쪽에 모두 적습니다.
+ * 프로덕션은 302 를 명시합니다 — 값이 빠져도 Worker 기본값이 302 이지만,
+ * dry-run 출력에서 바로 확인할 수 있게 둡니다.
+ */
+const PRODUCTION_VARS = { REDIRECT_MODE: "302" };
+const STAGING_VARS = { REDIRECT_MODE: "html", ROBOTS_NOINDEX: "true" };
+
+/**
  * 고정값입니다. 실행할 때마다 오늘 날짜로 갱신하면 Worker 런타임 동작이
  * 나도 모르는 사이에 바뀝니다. 올릴 때는 변경 로그를 확인하고 의도적으로 올리십시오.
  * https://developers.cloudflare.com/workers/configuration/compatibility-dates/
@@ -32,7 +54,15 @@ function validate(links) {
   const seen = new Map(); // path → 그 path 를 선언한 항목의 path
 
   for (const link of links) {
-    const { path, label, listed, target, handler, aliases = [] } = link;
+    const {
+      path,
+      label,
+      listed,
+      target,
+      handler,
+      linkIcon,
+      aliases = [],
+    } = link;
 
     if (!path.startsWith("/")) {
       errors.push(`${path}: 경로는 "/" 로 시작해야 합니다`);
@@ -42,6 +72,13 @@ function validate(links) {
     }
     if (listed && !label.trim()) {
       errors.push(`${path}: listed: true 인데 label 이 비었습니다`);
+    }
+    // HTML 리디렉션의 <title> 이 label 로 만들어집니다.
+    if (linkIcon && !label.trim()) {
+      errors.push(`${path}: linkIcon 이 있는데 label 이 비었습니다`);
+    }
+    if (linkIcon && handler) {
+      errors.push(`${path}: handler 경로에는 linkIcon 을 쓸 수 없습니다`);
     }
 
     for (const p of [path, ...aliases]) {
@@ -63,14 +100,23 @@ function validate(links) {
   return [...seen.keys()];
 }
 
-function render(paths) {
-  const routes = paths
+/** table 은 "routes" 또는 "env.staging.routes" */
+const renderRoutes = (table, host, paths) =>
+  paths
     .map(
       (p) =>
-        `[[routes]]\npattern = "${ZONE_NAME}${p}"\nzone_name = "${ZONE_NAME}"\n`,
+        `[[${table}]]\npattern = "${host}${p}"\nzone_name = "${ZONE_NAME}"\n`,
     )
     .join("\n");
 
+const renderVars = (table, vars) =>
+  [
+    `[${table}]`,
+    ...Object.entries(vars).map(([k, v]) => `${k} = "${v}"`),
+    "",
+  ].join("\n");
+
+function render(paths) {
   return [
     WARNING,
     "# 고치려면 src/data/shortlinks.ts 를 수정한 뒤",
@@ -80,7 +126,16 @@ function render(paths) {
     `main = "${WORKER_MAIN}"`,
     `compatibility_date = "${COMPATIBILITY_DATE}"`,
     "",
-    routes,
+    renderVars("vars", PRODUCTION_VARS),
+    renderRoutes("routes", ZONE_NAME, paths),
+    `# ── staging (wrangler … --env ${STAGING.env}) ──`,
+    `# 프로덕션 라우트와 같은 경로를 ${STAGING.host} 에 붙입니다.`,
+    "",
+    `[env.${STAGING.env}]`,
+    `name = "${STAGING.name}"`,
+    "",
+    renderVars(`env.${STAGING.env}.vars`, STAGING_VARS),
+    renderRoutes(`env.${STAGING.env}.routes`, STAGING.host, paths),
   ].join("\n");
 }
 
@@ -99,12 +154,15 @@ if (checkOnly) {
     console.error("  해결: pnpm run worker:routes");
     process.exit(1);
   }
+  const n = validate(shortLinks).length;
   console.log(
-    `✓ worker/wrangler.toml 최신 상태 (라우트 ${validate(shortLinks).length}개)`,
+    `✓ worker/wrangler.toml 최신 상태 (프로덕션 라우트 ${n}개 + staging 라우트 ${n}개)`,
   );
 } else {
   writeFileSync(OUT, expected, "utf8");
   const paths = validate(shortLinks);
-  console.log(`✓ worker/wrangler.toml 생성 — 라우트 ${paths.length}개`);
+  console.log(
+    `✓ worker/wrangler.toml 생성 — 라우트 ${paths.length}개 × (${ZONE_NAME}, ${STAGING.host})`,
+  );
   console.log(`  ${paths.join(" ")}`);
 }

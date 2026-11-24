@@ -13,3 +13,10 @@
 
 /*.png
   Cache-Control: public, max-age=604800
+
+# staging 커스텀 도메인 전체를 색인에서 뺍니다. 호스트가 다르면 이 규칙은 무시되므로
+# 같은 빌드를 프로덕션에 배포해도 영향이 없습니다.
+# robots.txt 의 Disallow: / 는 쓰지 않습니다(favicon 수집기까지 막을 수 있음).
+# *.pages.dev 미리보기 배포에는 Cloudflare Pages 가 이 헤더를 자동으로 붙입니다.
+https://staging.kimpyun.zip/*
+  X-Robots-Tag: noindex
