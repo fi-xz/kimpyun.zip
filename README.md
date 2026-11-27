@@ -22,4 +22,4 @@ pnpm deploy   # Pages + Worker 배포 (Cloudflare 로그인 필요)
 
 ## 라이선스
 
-[MIT](../LICENSE)
+이미지/로고/영상 등의 Asset을 제외한 코드는 [MIT](LICENSE)입니다.
